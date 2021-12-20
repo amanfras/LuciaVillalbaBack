@@ -15,7 +15,7 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
-UPLOAD_FOLDER = 'static/uploads/'
+UPLOAD_FOLDER = 'imagenes'
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'app.sqlite')
@@ -91,12 +91,12 @@ def allowed_file(filename):
 	
 @app.route("/blog/add", methods=["POST"])
 def add_blog():
-    title = request.form["title"]
-    content = request.form["content"]
-    fecha = request.form["fecha"]
-    imagen = request.form["imagen"]
-
-    record = Blog(title, content, fecha, imagen)
+    title = request.form.get("title")
+    content = request.form.get("content")
+    fecha = request.form.get("fecha")
+    imagen = request.files["imagen"]
+    imagen.save(os.path.join(app.config['UPLOAD_FOLDER'], imagen.filename))
+    record = Blog(title, content, fecha, os.path.join(app.config['UPLOAD_FOLDER'], imagen.filename))
     db.session.add(record)
     db.session.commit()
 
@@ -113,9 +113,9 @@ def delete_blog(id):
 @app.route("/blog/blog/<id>", methods=["PUT"])
 def update_blog(id):
     record = Blog.query.get(id)
-    title = request.form["title"]
-    content = request.form["content"]
-    fecha = request.form["fecha"]
+    title = request.form.get("title")
+    content = request.form.get("content")
+    fecha = request.form.get("fecha")
     imagen = request.files["imagen"]
     
     record.title=title
