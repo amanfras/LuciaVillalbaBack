@@ -91,10 +91,10 @@ def allowed_file(filename):
 	
 @app.route("/blog/add", methods=["POST"])
 def add_blog():
-    title = request.text["title"]
-    content = request.text["content"]
-    fecha = request.text["fecha"]
-    imagen = request.files["imagen"]
+    title = request.form["title"]
+    content = request.form["content"]
+    fecha = request.form["fecha"]
+    imagen = request.form["imagen"]
 
     record = Blog(title, content, fecha, imagen)
     db.session.add(record)
@@ -113,9 +113,9 @@ def delete_blog(id):
 @app.route("/blog/blog/<id>", methods=["PUT"])
 def update_blog(id):
     record = Blog.query.get(id)
-    title = request.text["title"]
-    content = request.text["content"]
-    fecha = request.text["fecha"]
+    title = request.form["title"]
+    content = request.form["content"]
+    fecha = request.form["fecha"]
     imagen = request.files["imagen"]
     
     record.title=title
