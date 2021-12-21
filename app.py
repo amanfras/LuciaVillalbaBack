@@ -5,13 +5,12 @@ Created on Sun Dec 19 15:48:08 2021
 @author: Adela
 """
 
-from flask import Flask, request, jsonify, flash, redirect, url_for, render_template
+from flask import Flask, request, jsonify,  Response
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from flask_cors import CORS
 import os
-import urllib.request
-from werkzeug.utils import secure_filename
+from requests_toolbelt import MultipartEncoder
 
 app = Flask(__name__)
 
@@ -82,12 +81,6 @@ def add_user():
 def get_all_users():
     all_users = User.query.all()
     return jsonify(users_schema.dump(all_users))
-
-
-ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
-
-def allowed_file(filename):
-	return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 	
 @app.route("/blog/add", methods=["POST"])
 def add_blog():
@@ -106,6 +99,8 @@ def add_blog():
 def delete_blog(id):
     record = Blog.query.get(id)
     db.session.delete(record)
+    imagen=record.imagen
+    os.remove(os.path.join(app.config['UPLOAD_FOLDER'], imagen))
     db.session.commit()
 
     return jsonify(blog_schema.dump(record))
@@ -121,7 +116,12 @@ def update_blog(id):
     record.title=title
     record.content=content
     record.fecha=fecha
-    record.imagen=imagen
+    
+    imagen_borrar=record.imagen
+    os.remove(os.path.join(app.config['UPLOAD_FOLDER'], imagen_borrar))
+    imagen.save(os.path.join(app.config['UPLOAD_FOLDER'], imagen.filename))
+
+    record.imagen=os.path.join(app.config['UPLOAD_FOLDER'], imagen.filename)
     
     db.session.commit()
 
@@ -130,7 +130,17 @@ def update_blog(id):
 @app.route("/blog/get", methods=["GET"])
 def get_all_blogs():
     all_blogs = Blog.query.all()
-    return jsonify(blogs_schema.dump(all_blogs))
+    fields=[]
+    i=1
+    for blog in all_blogs:
+        fields.append(('title'+str(i), blog.title))
+        fields.append(('fecha'+str(i), blog.fecha))
+        fields.append(('content'+str(i), blog.content))
+        fields.append(('id'+str(i), str(blog.id)))
+        fields.append(('imagen'+str(i), (str(blog.id) , open(blog.imagen, 'rb'), 'image/jpg')))
+        i=i+1
+    m = MultipartEncoder(fields)
+    return Response(m.to_string(), mimetype=m.content_type)
 
 
 if __name__ == "__main__":
