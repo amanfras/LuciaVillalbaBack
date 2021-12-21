@@ -100,7 +100,7 @@ def delete_blog(id):
     record = Blog.query.get(id)
     db.session.delete(record)
     imagen=record.imagen
-    os.remove(os.path.join(app.config['UPLOAD_FOLDER'], imagen))
+    os.remove(imagen)
     db.session.commit()
 
     return jsonify(blog_schema.dump(record))
