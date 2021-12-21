@@ -12,6 +12,23 @@ from flask_cors import CORS
 import os
 from requests_toolbelt import MultipartEncoder
 
+
+import pyrebase
+
+config = {
+  'apiKey': "AIzaSyDyQi_BwRTdvDXQ8LjWeDVNgOLEccQW3CI",
+  'authDomain': "lucia-back.firebaseapp.com",
+  'storageBucket': "lucia-back.appspot.com",
+  "databaseURL": "",
+  "serviceAccount": "lucia-back-firebase.json"
+}
+
+firebase = pyrebase.initialize_app(config)
+
+storage = firebase.storage()
+
+
+
 app = Flask(__name__)
 
 UPLOAD_FOLDER = 'imagenes'
@@ -88,24 +105,26 @@ def add_blog():
     content = request.form.get("content")
     fecha = request.form.get("fecha")
     imagen = request.files["imagen"]
-    imagen.save(os.path.join(app.config['UPLOAD_FOLDER'], imagen.filename))
-    record = Blog(title, content, fecha, os.path.join(app.config['UPLOAD_FOLDER'], imagen.filename))
+    storage.child(f'images/{imagen.filename}').put(imagen)
+    record = Blog(title, content, fecha, f'images/{imagen.filename}')
     db.session.add(record)
     db.session.commit()
 
     return jsonify(blog_schema.dump(record))
 
-@app.route("/blog/delete/<id>", methods=["DELETE"])
+@app.route("/delete/<id>", methods=["DELETE"])
 def delete_blog(id):
     record = Blog.query.get(id)
+    print(record.imagen)
+    storage.delete(record.imagen)
+    
     db.session.delete(record)
-    imagen=record.imagen
-    os.remove(imagen)
     db.session.commit()
+    
 
     return jsonify(blog_schema.dump(record))
 
-@app.route("/blog/blog/<id>", methods=["PUT"])
+@app.route("/blog/<id>", methods=["PUT"])
 def update_blog(id):
     record = Blog.query.get(id)
     title = request.form.get("title")
@@ -116,12 +135,7 @@ def update_blog(id):
     record.title=title
     record.content=content
     record.fecha=fecha
-    
-    imagen_borrar=record.imagen
-    os.remove(os.path.join(app.config['UPLOAD_FOLDER'], imagen_borrar))
-    imagen.save(os.path.join(app.config['UPLOAD_FOLDER'], imagen.filename))
-
-    record.imagen=os.path.join(app.config['UPLOAD_FOLDER'], imagen.filename)
+    storage.child(record.imagen).put(imagen)
     
     db.session.commit()
 
@@ -130,17 +144,9 @@ def update_blog(id):
 @app.route("/blog/get", methods=["GET"])
 def get_all_blogs():
     all_blogs = Blog.query.all()
-    fields=[]
-    i=1
     for blog in all_blogs:
-        fields.append(('title'+str(i), blog.title))
-        fields.append(('fecha'+str(i), blog.fecha))
-        fields.append(('content'+str(i), blog.content))
-        fields.append(('id'+str(i), str(blog.id)))
-        fields.append(('imagen'+str(i), (str(blog.id) , open(blog.imagen, 'rb'), 'image/jpg')))
-        i=i+1
-    m = MultipartEncoder(fields)
-    return Response(m.to_string(), mimetype=m.content_type)
+        blog.imagen= storage.child(blog.imagen).get_url(1)
+    return jsonify(blogs_schema.dump(all_blogs))
 
 
 if __name__ == "__main__":

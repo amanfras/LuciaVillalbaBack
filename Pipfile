@@ -11,6 +11,7 @@ marshmallow-sqlalchemy = "*"
 gunicorn = "*"
 flask-cors = "*"
 requests-toolbelt = "*"
+pyrebase = "*"
 
 [dev-packages]
 
