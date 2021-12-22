@@ -150,6 +150,7 @@ def get_all_blogs():
 @app.route("/blog/get/<id>", methods=["GET"])
 def get_blog(id):
     record = Blog.query.get(id)
+    record.imagen= storage.child(record.imagen).get_url(1)
     return jsonify(blog_schema.dump(record))
 
 
