@@ -5,12 +5,11 @@ Created on Sun Dec 19 15:48:08 2021
 @author: Adela
 """
 
-from flask import Flask, request, jsonify,  Response
+from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from flask_cors import CORS
 import os
-from requests_toolbelt import MultipartEncoder
 
 
 import pyrebase
@@ -147,6 +146,11 @@ def get_all_blogs():
     for blog in all_blogs:
         blog.imagen= storage.child(blog.imagen).get_url(1)
     return jsonify(blogs_schema.dump(all_blogs))
+
+@app.route("/blog/get/<id>", methods=["GET"])
+def get_blog(id):
+    record = Blog.query.get(id)
+    return jsonify(blog_schema.dump(record))
 
 
 if __name__ == "__main__":
